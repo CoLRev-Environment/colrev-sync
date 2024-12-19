@@ -7,7 +7,6 @@ import re
 import typing
 from pathlib import Path
 
-import pybtex.errors
 
 import colrev.dataset
 import colrev.env.local_index
@@ -204,7 +203,6 @@ class Sync:
                 self.non_unique_for_import.append(listed_item)
 
     def _get_ids_in_paper(self) -> typing.List:
-        pybtex.errors.set_strict_mode(False)
 
         if self.references_file.is_file():
 
@@ -277,7 +275,6 @@ class Sync:
             file.write("\n".join(sorted(ref_list)))
 
     def _export_to_bib(self) -> None:
-        pybtex.errors.set_strict_mode(False)
 
         if not self.references_file.is_file():
             records = []
