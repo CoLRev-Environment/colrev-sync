@@ -7,7 +7,6 @@ import re
 import typing
 from pathlib import Path
 
-
 import colrev.dataset
 import colrev.env.local_index
 import colrev.env.local_index_builder
