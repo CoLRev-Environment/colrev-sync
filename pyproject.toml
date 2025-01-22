@@ -22,6 +22,15 @@ colrev_doc_description = "Sync"
 colrev_doc_link = "README.md"
 search_types = []
 
+[tool.mypy]
+python_version = 3.13
+warn_unused_configs = true
+ignore_missing_imports = true
+
+[[tool.mypy.overrides]]
+module = []
+ignore_missing_imports = true
+
 [build-system]
 requires = ["poetry-core>=1.0.0", "cython<3.0"]
 build-backend = "poetry.core.masonry.api"
