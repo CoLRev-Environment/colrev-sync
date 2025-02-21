@@ -6,7 +6,7 @@ import logging
 import re
 import typing
 from pathlib import Path
-
+from collections import defaultdict
 import colrev.dataset
 import colrev.env.local_index
 import colrev.env.local_index_builder
@@ -21,7 +21,7 @@ import colrev.ui_cli.cli_status_printer
 import colrev.ui_cli.cli_validation
 import colrev.ui_cli.dedupe_errors
 from colrev.constants import Colors
-from colrev.constants import Fields
+from colrev.constants import Fields, ENTRYTYPES
 from colrev.constants import FieldSet
 from colrev.constants import RecordState
 from colrev.packages.crossref.src import crossref_api
@@ -342,6 +342,13 @@ class Sync:
         api = crossref_api.CrossrefAPI(params={})
 
         for record_dict in records.values():
+            if Fields.URL in record_dict and "#:~:text=" in record_dict[Fields.URL]:
+                record_dict[Fields.URL] = record_dict[Fields.URL].split("#:~:text=")[0]
+
+            if record_dict[Fields.ENTRYTYPE] == ENTRYTYPES.ARTICLE:
+                if Fields.PUBLISHER in record_dict:
+                    record_dict.pop(Fields.PUBLISHER)
+
             if "doi" in record_dict:
                 continue
             record = colrev.record.record.Record(record_dict)
@@ -402,6 +409,60 @@ def main() -> None:
                     continue
 
     sync_operation.add_to_bib()
+
+
+
+
+
+def count_citations_by_section(paper_path: Path):
+    """
+    Count in-text citations grouped by first-level headings in a Markdown file,
+    while ignoring citations in HTML comments and excluding keys starting with 'fig' or 'tbl'.
+    
+    :param paper_path: Path to the paper file (Markdown)
+    :return: Dictionary with section titles as keys and citation counts as values
+    """
+    if not paper_path.is_file():
+        print(f"File not found: {paper_path}")
+        return {}
+    
+    content = paper_path.read_text(encoding="utf-8")
+    
+    # Remove HTML comments (<!-- ... -->)
+    content = re.sub(r"<!--.*?-->", "", content, flags=re.DOTALL)
+    
+    # Split content by first-level headings
+    sections = re.split(r"^# (.+)$", content, flags=re.MULTILINE)
+    
+    citation_counts = defaultdict(lambda: defaultdict(int))
+    current_section = "No Section"
+    ordered_sections = []
+    
+    for i in range(1, len(sections), 2):
+        current_section = sections[i].strip()
+        section_content = sections[i + 1]
+        ordered_sections.append(current_section)
+        
+        # Find citation keys in markdown format
+        citations = re.findall(r"(^|\s|\[|;)(@[a-zA-Z0-9_]+)+", section_content)
+        citation_keys = [match[1].replace("@", "") for match in citations]
+        
+        for key in citation_keys:
+            if not key.startswith(("fig", "tbl")):
+                citation_counts[current_section][key] += 1
+    
+    return [(section, citation_counts[section]) for section in ordered_sections if section in citation_counts]
+
+
+def stats() -> None:
+    paper_file = Path("paper.md")  # Adjust file path if necessary
+    sorted_citation_counts = count_citations_by_section(paper_file)
+    
+    for section, citations in sorted_citation_counts:
+        total_count = sum(citations.values())
+        print(f"{section}: {total_count} citations")
+        for citation_key, count in sorted(citations.items(), key=lambda item: item[1], reverse=True):
+            print(f"  - {citation_key}: {count}")
 
 
 # @click.option(
