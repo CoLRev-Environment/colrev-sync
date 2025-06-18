@@ -15,12 +15,12 @@ dependencies = [
 repository = "https://github.com/CoLRev-Environment/colrev-sync"
 
 [project.scripts]
-colrev-sync = "src.sync:main"
-colrev-sync-stats = "src.sync:stats"
-colrev-hooks-update = "colrev_sync.update_hook:main"
+colrev-sync = "colrev_sync.sync:main"
+colrev-sync-stats = "colrev_sync.sync:stats"
+colrev-sync-hooks-update = "colrev_sync.update_hook:main"
 
 [tool.hatch.build.targets.wheel]
-packages = ["src"]
+packages = ["colrev_sync"]
 
 [tool.colrev]
 colrev_doc_description = "Sync"
