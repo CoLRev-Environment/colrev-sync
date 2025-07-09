@@ -5,23 +5,17 @@ from __future__ import annotations
 import logging
 import re
 import typing
-from pathlib import Path
 from collections import defaultdict
-import colrev.dataset
+from pathlib import Path
+
 import colrev.env.local_index
-import colrev.env.local_index_builder
 import colrev.exceptions as colrev_exceptions
 import colrev.loader.load_utils_formatter
-import colrev.ops.check
-import colrev.package_manager.package_manager
 import colrev.record.record
 import colrev.record.record_similarity
-import colrev.review_manager
-import colrev.ui_cli.cli_status_printer
-import colrev.ui_cli.cli_validation
-import colrev.ui_cli.dedupe_errors
 from colrev.constants import Colors
-from colrev.constants import Fields, ENTRYTYPES
+from colrev.constants import ENTRYTYPES
+from colrev.constants import Fields
 from colrev.constants import FieldSet
 from colrev.constants import RecordState
 from colrev.packages.crossref.src import crossref_api
@@ -411,57 +405,61 @@ def main() -> None:
     sync_operation.add_to_bib()
 
 
-
-
-
-def count_citations_by_section(paper_path: Path):
+def count_citations_by_section(paper_path: Path) -> list[tuple[str, dict[str, int]]]:
     """
     Count in-text citations grouped by first-level headings in a Markdown file,
     while ignoring citations in HTML comments and excluding keys starting with 'fig' or 'tbl'.
-    
+
     :param paper_path: Path to the paper file (Markdown)
     :return: Dictionary with section titles as keys and citation counts as values
     """
     if not paper_path.is_file():
         print(f"File not found: {paper_path}")
         return {}
-    
+
     content = paper_path.read_text(encoding="utf-8")
-    
+
     # Remove HTML comments (<!-- ... -->)
     content = re.sub(r"<!--.*?-->", "", content, flags=re.DOTALL)
-    
+
     # Split content by first-level headings
     sections = re.split(r"^# (.+)$", content, flags=re.MULTILINE)
-    
+
     citation_counts = defaultdict(lambda: defaultdict(int))
     current_section = "No Section"
     ordered_sections = []
-    
+
     for i in range(1, len(sections), 2):
         current_section = sections[i].strip()
         section_content = sections[i + 1]
         ordered_sections.append(current_section)
-        
+
         # Find citation keys in markdown format
         citations = re.findall(r"(^|\s|\[|;)(@[a-zA-Z0-9_]+)+", section_content)
         citation_keys = [match[1].replace("@", "") for match in citations]
-        
+
         for key in citation_keys:
             if not key.startswith(("fig", "tbl")):
                 citation_counts[current_section][key] += 1
-    
-    return [(section, citation_counts[section]) for section in ordered_sections if section in citation_counts]
+
+    return [
+        (section, citation_counts[section])
+        for section in ordered_sections
+        if section in citation_counts
+    ]
 
 
 def stats() -> None:
+    """Print statistics of citations by section in the paper file."""
     paper_file = Path("paper.md")  # Adjust file path if necessary
     sorted_citation_counts = count_citations_by_section(paper_file)
-    
+
     for section, citations in sorted_citation_counts:
         total_count = sum(citations.values())
         print(f"{section}: {total_count} citations")
-        for citation_key, count in sorted(citations.items(), key=lambda item: item[1], reverse=True):
+        for citation_key, count in sorted(
+            citations.items(), key=lambda item: item[1], reverse=True
+        ):
             print(f"  - {citation_key}: {count}")
 
 

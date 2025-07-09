@@ -2,17 +2,17 @@
 """Hook to update non-CoLRev repositories"""
 from pathlib import Path
 
-import colrev_sync
-
 from colrev.constants import Colors
 from colrev.constants import ExitCodes
 from colrev.constants import Fields
+
+import colrev_sync.sync
 
 
 def main() -> int:
     """Main entrypoint for the update hoooks"""
 
-    sync_operation = colrev_sync.Sync()
+    sync_operation = colrev_sync.sync.Sync()
     sync_operation.get_cited_papers()
 
     if len(sync_operation.non_unique_for_import) > 0:
