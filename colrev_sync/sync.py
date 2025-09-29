@@ -333,7 +333,7 @@ class Sync:
             logger=self.logger,
         )
 
-        api = crossref_api.CrossrefAPI(params={})
+        api = crossref_api.CrossrefAPI(url="https://api.crossref.org/")
 
         for record_dict in records.values():
             if Fields.URL in record_dict and "#:~:text=" in record_dict[Fields.URL]:
